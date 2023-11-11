@@ -8,4 +8,8 @@ type formule_syllogisme =
 (** string_of_formule f : conversion d'une formule f en chaîne de caractères,
     en considérant des prédicats unaires appliqués sur des 
     occurrences de la variable s. *)
-let string_of_formule (_ : formule_syllogisme) : string = failwith "à faire"
+let string_of_formule : formule_syllogisme -> string = function
+  | PourTout f ->
+      String.concat "" [ "∀x "; string_of_formule_log_prop_var "x" f ]
+  | IlExiste f ->
+      String.concat "" [ "∃x "; string_of_formule_log_prop_var "x" f ]
