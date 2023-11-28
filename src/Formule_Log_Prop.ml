@@ -14,6 +14,33 @@ type formule_log_prop =
   | AuMoins of int * formule_log_prop list
   | AuPlus of int * formule_log_prop list
 
+(** atomes f : renvoie la liste (triée et sans doublon) des atomes d'une 
+    formule de la logique propositionnelle.*)
+let atomes (f : formule_log_prop) : string list =
+  let rec aux acc = function
+    | Atome s -> s :: acc
+    | Non f -> aux acc f
+    | Ou (f, g) | Et (f, g) | Imp (f, g) | Xor (f, g) | Equiv (f, g) ->
+        aux [] f @ aux [] g @ acc
+    | Aucun l | Tous l | AuMoins (_, l) | AuPlus (_, l) ->
+        List.fold_left (fun a f -> aux [] f @ a) [] l
+    | Bot | Top -> acc
+  in
+  List.sort_uniq compare (aux [] f)
+
+(** all_sublists l : renvoie une liste qui contient toutes les combinaisons 
+    des éléments présent dans l. *)
+let rec all_sublists : 'a list -> 'a list list = function
+  | [] -> [ [] ]
+  | h :: t ->
+      let a = all_sublists t in
+      List.map (function a -> h :: a) a @ a
+
+(** verity_lines l f : renvoie toute les conbinaison possible des atomes 
+    issue de f ou de l sans aucun doublon. *)
+let verity_lines (l : string list) (f : formule_log_prop) : string list list =
+  all_sublists (List.sort_uniq compare (l @ atomes f))
+
 type interpretation = string -> bool
 (** Type des interprétations. *)
 
@@ -56,33 +83,6 @@ let rec eval (i : interpretation) : formule_log_prop -> bool = function
     interprétation (valant vrai pour les string contenu dans la liste de string, 
     et faux sinon). *)
 let interpretation_of_list : string list -> interpretation = Fun.flip List.mem
-
-(** all_sublists l : Calcule la liste de toutes les listes de Booléens d'une 
-    longueur donnée. *)
-let rec all_sublists : 'a list -> 'a list list = function
-  | [] -> [ [] ]
-  | h :: t ->
-      let a = all_sublists t in
-      List.map (function a -> h :: a) a @ a
-
-(** atomes f : Calcule la liste (triée et sans doublon) des atomes d'une 
-    formule de la logique propositionnelle.*)
-let atomes (f : formule_log_prop) : string list =
-  let rec aux acc = function
-    | Atome s -> s :: acc
-    | Non f -> aux acc f
-    | Ou (f, g) | Et (f, g) | Imp (f, g) | Xor (f, g) | Equiv (f, g) ->
-        aux [] f @ aux [] g @ acc
-    | Aucun l | Tous l | AuMoins (_, l) | AuPlus (_, l) ->
-        List.fold_left (fun a f -> aux [] f @ a) [] l
-    | Bot | Top -> acc
-  in
-  List.sort_uniq compare (aux [] f)
-
-(** verity_lines l f : renvoie toute les conbinaison possible des atomes 
-    issue de f ou de l sans aucun doublon. *)
-let verity_lines (l : string list) (f : formule_log_prop) : string list list =
-  all_sublists (List.sort_uniq compare (l @ atomes f))
 
 (** table_verite alpha f : renvoie la table de vérité de f sur les atomes issus 
     de f ou de alpha. *)
@@ -142,7 +142,7 @@ let rec string_of_formule_log_prop_var (s : string) : formule_log_prop -> string
         [
           "(";
           string_of_formule_log_prop_var s f;
-          " <=> ";
+          " ↔ ";
           string_of_formule_log_prop_var s g;
           ")";
         ]

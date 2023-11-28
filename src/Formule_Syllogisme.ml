@@ -13,3 +13,8 @@ let string_of_formule : formule_syllogisme -> string = function
       String.concat "" [ "∀x "; string_of_formule_log_prop_var "x" f ]
   | IlExiste f ->
       String.concat "" [ "∃x "; string_of_formule_log_prop_var "x" f ]
+
+(** atomes_of_formule f : renvoie la liste (triée et sans doublon) des atomes 
+    présent dans une formulle de syllogisme.*)
+let atomes_of_formule : formule_syllogisme -> string list = function
+  | PourTout f | IlExiste f -> atomes f
