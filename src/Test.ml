@@ -145,7 +145,7 @@ let print_comp_conclusion (n : int) (comb : diagramme list) (c : diagramme list)
   | n' when n' < 0 -> raise BadCounter
   | _ -> (
       Printf.printf "%*sConclusion " n "";
-      match temoin_incompatibilite_premisses_conc_diag comb c with
+      match temoins_incompatibilite_premisses_conc_diag comb c with
       | [] -> Printf.printf "compatible avec les diagrammes.\n"
       | dl ->
           Printf.printf "incompatible avec les diagrammes, contre-exemples :\n";
@@ -156,36 +156,39 @@ let print_comp_conclusion (n : int) (comb : diagramme list) (c : diagramme list)
     conclusion, tout en traçant les calculs réalisés et les diagrammes calculés,
     et en affichant tous les contre-exemples le cas échéant. *)
 let test (fl : formule_syllogisme list) (c : formule_syllogisme) : unit =
-  match fl with
-  | [] -> failwith "Bad argument"
-  | _ ->
-      let a =
-        List.sort_uniq compare
-          (List.concat (List.map atomes_of_formule fl) @ atomes_of_formule c)
-      in
-      print_premisses 0 fl;
-      print_conclusion 0 c;
-      let dpl = List.map (diag_from_formule a) fl in
-      print_diagrames_premisses 0 dpl;
-      let comb_dl =
-        List.fold_left
+  let a =
+    List.sort_uniq compare
+      (List.concat (List.map atomes_of_formule fl) @ atomes_of_formule c)
+  in
+  print_premisses 0 fl;
+  print_conclusion 0 c;
+  let dpl = List.map (diag_from_formule a) fl in
+  print_diagrames_premisses 0 dpl;
+  let comb_dl = (match fl with
+    | [] -> []
+    | _ -> List.fold_left
           (fun acc dl -> conj_diag_list acc dl)
-          (List.hd dpl) (List.tl dpl)
-      in
-      print_diagrames_combinaison 0 comb_dl;
-      let dc = diag_from_formule a c in
-      print_diagrames_conclusion 0 dc;
-      print_comp_conclusion 0 comb_dl dc
-;;
+          (List.hd dpl) (List.tl dpl)) in
+  print_diagrames_combinaison 0 comb_dl;
+  let dc = diag_from_formule a c in
+  print_diagrames_conclusion 0 dc;
+  print_comp_conclusion 0 comb_dl dc;;
 
 (* Syllogisme du td *)
+
+exception AssertionError
+
+let test_unit (fl : formule_syllogisme list) (c : formule_syllogisme) (t : bool) : unit =
+  match est_compatible_premisses_conc fl c with
+  | b when b <> t -> raise AssertionError
+  | _ -> print_endline "Test unit pass";;
 
 (* q1 *)
 print_endline "Question 1\n";;
 
 let p1 = PourTout (a |*| b) in
 let c = PourTout a in
-test [ p1 ] c
+test_unit [ p1 ] c true
 ;;
 
 print_newline ();;
@@ -195,7 +198,7 @@ print_endline "Question 2\n";;
 
 let p1 = IlExiste (a |*| b) in
 let c = IlExiste a in
-test [ p1 ] c
+test_unit [ p1 ] c true
 ;;
 
 print_newline ();;
@@ -206,7 +209,7 @@ print_endline "Question 3\n";;
 let p1 = PourTout a in
 let p2 = PourTout b in
 let c = PourTout (a |*| b) in
-test [ p1; p2 ] c
+test_unit [ p1; p2 ] c true
 ;;
 
 print_newline ();;
@@ -217,7 +220,7 @@ print_endline "Question 4\n";;
 let p1 = IlExiste a in
 let p2 = IlExiste b in
 let c = IlExiste (a |*| b) in
-test [ p1; p2 ] c
+test_unit [ p1; p2 ] c false
 ;;
 
 print_newline ();;
@@ -227,7 +230,7 @@ print_endline "Question 5\n";;
 
 let p1 = IlExiste b in
 let c = IlExiste (a |+| b) in
-test [ p1 ] c
+test_unit [ p1 ] c true
 ;;
 
 print_newline ();;
@@ -237,7 +240,7 @@ print_endline "Question 6\n";;
 
 let p1 = PourTout a in
 let c = PourTout (a |+| b) in
-test [ p1 ] c
+test_unit [ p1 ] c true
 ;;
 
 print_newline ();;
@@ -247,7 +250,7 @@ print_endline "Question 7\n";;
 
 let p1 = PourTout (a |+| b) in
 let c = PourTout a in
-test [ p1 ] c
+test_unit [ p1 ] c false
 ;;
 
 print_newline ();;
@@ -258,7 +261,7 @@ print_endline "Question 8\n";;
 let p1 = PourTout (a |->| b) in
 let p2 = IlExiste a in
 let c = IlExiste b in
-test [ p1; p2 ] c
+test_unit [ p1; p2 ] c true
 ;;
 
 print_newline ();;
@@ -269,7 +272,7 @@ print_endline "Question 9\n";;
 let p1 = PourTout (a |->| b) in
 let p2 = IlExiste (Non b) in
 let c = IlExiste (Non a) in
-test [ p1; p2 ] c
+test_unit [ p1; p2 ] c true
 ;;
 
 print_newline ();;
@@ -280,7 +283,7 @@ print_endline "Question 10\n";;
 let p1 = PourTout (a |->| b) in
 let p2 = PourTout a in
 let c = PourTout b in
-test [ p1; p2 ] c
+test_unit [ p1; p2 ] c true
 ;;
 
 print_newline ();;
@@ -291,7 +294,7 @@ print_endline "Question 11\n";;
 let p1 = IlExiste (a |->| b) in
 let p2 = PourTout a in
 let c = PourTout b in
-test [ p1; p2 ] c
+test_unit [ p1; p2 ] c false
 ;;
 
 print_newline ();;
@@ -302,7 +305,7 @@ print_endline "Question 12\n";;
 let p1 = IlExiste (a |->| b) in
 let p2 = PourTout a in
 let c = IlExiste b in
-test [ p1; p2 ] c
+test_unit [ p1; p2 ] c true
 ;;
 
 print_newline ();;
@@ -313,7 +316,7 @@ print_endline "Question 13\n";;
 let p1 = PourTout (a |++| b) in
 let p2 = PourTout a in
 let c = PourTout (Non b) in
-test [ p1; p2 ] c
+test_unit [ p1; p2 ] c true
 ;;
 
 print_newline ();;
@@ -324,7 +327,7 @@ print_endline "Question 14\n";;
 let p1 = IlExiste (a |++| b) in
 let p2 = IlExiste a in
 let c = IlExiste (Non b) in
-test [ p1; p2 ] c
+test_unit [ p1; p2 ] c false
 ;;
 
 print_newline ();;
@@ -335,8 +338,10 @@ print_endline "Question 15\n";;
 let p1 = PourTout (a |->| (b |->| c)) in
 let p2 = PourTout (a |->| b) in
 let p3 = PourTout a in
-let c = IlExiste (Non b) in
-test [ p1; p2; p3 ] c
+let c = PourTout c in
+test_unit [ p1; p2; p3 ] c true
 ;;
 
-print_newline ()
+print_newline ();
+
+test [] (PourTout c)

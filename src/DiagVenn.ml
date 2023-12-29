@@ -135,32 +135,38 @@ let est_compatible_list_list (d1 : diagramme list) (d2 : diagramme list) : bool
     compatible avec une conclusion c *)
 let est_compatible_premisses_conc (fl : formule_syllogisme list)
     (c : formule_syllogisme) : bool =
-  let dc = diag_from_formule [] c in
-  List.for_all
-    (fun f -> est_compatible_list_list dc (diag_from_formule [] f))
-    fl
+  match fl with
+  | [] -> false
+  | _ ->
+    let a =
+      List.sort_uniq compare
+        (List.concat (List.map atomes_of_formule fl) @ atomes_of_formule c)
+    in
+    let comb_dl = List.fold_left 
+      (fun acc f -> conj_diag_list acc (diag_from_formule a f)) 
+      (diag_from_formule a (List.hd fl)) 
+      (List.tl fl) in
+    est_compatible_list_list comb_dl (diag_from_formule a c)
 
 (** temoin_incompatibilite_premisses_conc_opt ps c : renvoie un diagramme de la 
     combinaison des prémisses ps incompatible avec la conclusion c s'il existe, 
     None sinon *)
 let temoin_incompatibilite_premisses_conc_opt (fl : formule_syllogisme list)
     (c : formule_syllogisme) : diagramme option =
-  let dc = diag_from_formule [] c in
-  let rec aux = function
-    | [] -> None
-    | x :: xs -> (
-        let d = diag_from_formule [] x in
-        match
-          List.find_opt (Fun.negate (Fun.flip est_compatible_diag_list dc)) d
-        with
-        | Some d' -> Some d'
-        | None -> aux xs)
-  in
-  aux fl
+    let a =
+      List.sort_uniq compare
+        (List.concat (List.map atomes_of_formule fl) @ atomes_of_formule c)
+    in
+  let dc = diag_from_formule a c in
+  let comb_dl = List.fold_left 
+    (fun acc f -> conj_diag_list acc (diag_from_formule a f)) 
+    (diag_from_formule a (List.hd fl)) 
+    (List.tl fl) in
+  List.find_opt (fun comb -> not (est_compatible_diag_list comb dc)) comb_dl
 
 (** temoins_incompatibilite_premisses_conc_diag combl cdl : renvoie les 
     diagrammes de la combinaison combl incompatibles avec la conclusion cdl *)
-let temoin_incompatibilite_premisses_conc_diag (combl : diagramme list)
+let temoins_incompatibilite_premisses_conc_diag (combl : diagramme list)
     (cdl : diagramme list) : diagramme list =
   List.fold_left
     (fun acc comb ->
@@ -177,11 +183,11 @@ let temoins_incompatibilite_premisses_conc (fl : formule_syllogisme list)
     List.sort_uniq compare
       (List.concat (List.map atomes_of_formule fl) @ atomes_of_formule c)
   in
-  let dc = diag_from_formule [] c in
+  let dc = diag_from_formule a c in
   let dpl = List.map (diag_from_formule a) fl in
   let comb_dl =
     List.fold_left
       (fun acc dl -> conj_diag_list acc dl)
       (List.hd dpl) (List.tl dpl)
   in
-  temoin_incompatibilite_premisses_conc_diag comb_dl dc
+  temoins_incompatibilite_premisses_conc_diag comb_dl dc
