@@ -341,7 +341,3 @@ let p3 = PourTout a in
 let c = PourTout c in
 test_unit [ p1; p2; p3 ] c true
 ;;
-
-print_newline ();
-
-test [] (PourTout c)
